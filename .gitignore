@@ -1,0 +1,24 @@
+# Angular
+/dist
+/tmp
+/out-tsc
+
+# Node
+/node_modules
+npm-debug.log
+yarn-error.log
+package-lock.json
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment files
+/src/environments/*.prod.ts
+
+# Angular cache
+/.angular/cache
