@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: "https://easyjob-backend.onrender.com/api",
+  apiUrl: "https://easyapply-wrc8.onrender.com/api",
 };

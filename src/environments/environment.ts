@@ -2,5 +2,5 @@
 // Production environment (environment.production.ts) points to Render deployment
 export const environment = {
   production: false,
-  apiUrl: "http://localhost:5077/api",
+  apiUrl: "https://easyapply-wrc8.onrender.com/api",
 };
