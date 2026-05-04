@@ -111,10 +111,12 @@ import { CandidateService } from "../../services/candidate.service";
                 {{ isSaved ? "Saved" : "Save for Later" }}
               </button>
               <button
-                class="p-2.5 bg-white border border-slate-200 rounded-2xl text-slate-600 hover:text-indigo-600 transition-all"
+                (click)="onShare()"
+                class="p-2.5 bg-white border border-slate-200 rounded-2xl text-slate-600 hover:text-indigo-600 transition-all group/share"
+                title="Share Job"
               >
                 <svg
-                  class="w-5 h-5"
+                  class="w-5 h-5 group-hover/share:scale-110 transition-transform"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -742,6 +744,16 @@ export class JobDetailComponent implements OnInit {
   }
 
   onApplySuccess() {
-    // Optionally update UI state (e.g. change "Apply Now" to "Applied")
+    this.isApplyModalOpen = false;
+    this.toastService.success("Application submitted successfully!");
+  }
+
+  onShare() {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url).then(() => {
+      this.toastService.success("Job link copied to clipboard!");
+    }).catch(() => {
+      this.toastService.error("Failed to copy link.");
+    });
   }
 }
