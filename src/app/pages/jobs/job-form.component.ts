@@ -53,12 +53,14 @@ import { CreateJobDto, UpdateJobDto } from '../../models/job.model';
 
               <div class="md:col-span-2">
                 <label class="block text-sm font-medium text-gray-700 mb-1">Job Description</label>
-                <textarea formControlName="description" rows="4" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors" placeholder="Describe the responsibilities..."></textarea>
+                <textarea formControlName="description" rows="6" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors" placeholder="Describe the responsibilities... Supports basic markdown."></textarea>
+                <p class="mt-1 text-[10px] text-gray-400 font-medium">Use **text** for bold, * item for lists. Preserves line breaks.</p>
               </div>
 
               <div class="md:col-span-2">
                 <label class="block text-sm font-medium text-gray-700 mb-1">Requirements</label>
-                <textarea formControlName="requirements" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors" placeholder="List the requirements..."></textarea>
+                <textarea formControlName="requirements" rows="4" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors" placeholder="List the requirements... Supports basic markdown."></textarea>
+                <p class="mt-1 text-[10px] text-gray-400 font-medium">Use **text** for bold, * item for lists. Preserves line breaks.</p>
               </div>
 
               <div>
