@@ -205,6 +205,7 @@ import { firstValueFrom } from "rxjs";
 })
 export class JobMapComponent implements OnChanges, AfterViewInit, OnDestroy {
   @Input() jobs: JobDto[] = [];
+  @Input() selectedJobId?: string;
   @ViewChild("mapContainer") mapContainer!: ElementRef;
 
   mapReady = false;
@@ -212,6 +213,7 @@ export class JobMapComponent implements OnChanges, AfterViewInit, OnDestroy {
   markerCount = 0;
   private map?: L.Map;
   private markers: L.Marker[] = [];
+  private jobToMarker = new Map<string, L.Marker>();
   private geocodeCache = new Map<string, [number, number] | null>();
 
   private readonly defaultCenter: L.LatLngExpression = [47.0105, 28.8638];
@@ -225,6 +227,9 @@ export class JobMapComponent implements OnChanges, AfterViewInit, OnDestroy {
   ngOnChanges(changes: SimpleChanges) {
     if (changes["jobs"] && this.map) {
       this.updateMarkers();
+    }
+    if (changes["selectedJobId"] && this.map && this.selectedJobId) {
+      this.focusOnJob(this.selectedJobId);
     }
   }
 
@@ -258,47 +263,79 @@ export class JobMapComponent implements OnChanges, AfterViewInit, OnDestroy {
 
     this.markers.forEach((m) => m.remove());
     this.markers = [];
+    this.jobToMarker.clear();
     this.markerCount = 0;
 
     if (this.jobs.length === 0) return;
 
     this.isGeocoding = true;
     const bounds = L.latLngBounds([]);
-
+    
+    // First, identify what needs geocoding and what is already known
+    const geocodePromises: Promise<void>[] = [];
+    
+    // Sequential geocoding queue to respect rate limits
+    let delay = 0;
+    
     for (const job of this.jobs) {
-      let coords: [number, number] | null = null;
-
-      // Use stored lat/lng from DB first
+      const addressToGeocode = job.address || job.location;
+      
+      // Case 1: Database has coordinates
       if (job.latitude && job.longitude) {
-        coords = [job.latitude, job.longitude];
-      } else {
-        // Try geocoding the address, then fallback to location
-        const addressToGeocode = job.address || job.location;
-        if (addressToGeocode) {
-          coords = await this.geocodeAddress(addressToGeocode);
-        }
+        this.addMarker(job, [job.latitude, job.longitude], bounds);
+        continue;
+      }
+      
+      // Case 2: Memory/Local cache has coordinates
+      const cached = this.geocodeCache.get(addressToGeocode || '') || 
+                     this.getCachedCoords(addressToGeocode || '');
+      
+      if (cached) {
+        this.addMarker(job, cached, bounds);
+        continue;
       }
 
-      if (coords) {
-        this.addMarker(job, coords, bounds);
+      // Case 3: Need to fetch from API
+      if (addressToGeocode && addressToGeocode.toLowerCase() !== 'remote') {
+        const currentDelay = delay;
+        delay += 1050; // 1 second + buffer
+        
+        geocodePromises.push((async () => {
+          await new Promise(resolve => setTimeout(resolve, currentDelay));
+          const coords = await this.fetchGeocode(addressToGeocode);
+          if (coords && this.jobs.includes(job)) { // Check if job is still in current list
+            this.addMarker(job, coords, bounds);
+            if (this.markers.length === 1 || this.markers.length % 5 === 0) {
+              this.map?.fitBounds(bounds, { padding: [60, 60], maxZoom: 14 });
+            }
+          }
+        })());
       }
     }
 
-    this.isGeocoding = false;
+    // Wait for all queued geocoding to complete
+    if (geocodePromises.length > 0) {
+      await Promise.all(geocodePromises);
+    }
 
+    this.isGeocoding = false;
     if (this.markers.length > 0) {
       this.map.fitBounds(bounds, { padding: [60, 60], maxZoom: 14 });
     }
   }
 
-  private async geocodeAddress(
-    address: string
-  ): Promise<[number, number] | null> {
-    // Check cache first
-    if (this.geocodeCache.has(address)) {
-      return this.geocodeCache.get(address)!;
+  private getCachedCoords(address: string): [number, number] | null {
+    if (!address) return null;
+    const cached = localStorage.getItem(`geo_${address}`);
+    if (cached) {
+      const coords = JSON.parse(cached) as [number, number] | null;
+      this.geocodeCache.set(address, coords);
+      return coords;
     }
+    return null;
+  }
 
+  private async fetchGeocode(address: string): Promise<[number, number] | null> {
     try {
       const encoded = encodeURIComponent(address);
       const url = `https://nominatim.openstreetmap.org/search?q=${encoded}&format=json&limit=1`;
@@ -307,22 +344,21 @@ export class JobMapComponent implements OnChanges, AfterViewInit, OnDestroy {
           headers: { "Accept-Language": "en" },
         })
       );
-
+ 
       if (results && results.length > 0) {
         const coords: [number, number] = [
           parseFloat(results[0].lat),
           parseFloat(results[0].lon),
         ];
         this.geocodeCache.set(address, coords);
-        // Small delay to respect Nominatim rate limits (1 req/sec)
-        await new Promise((resolve) => setTimeout(resolve, 1100));
+        localStorage.setItem(`geo_${address}`, JSON.stringify(coords));
         return coords;
       }
-
+ 
       this.geocodeCache.set(address, null);
+      localStorage.setItem(`geo_${address}`, "null");
       return null;
     } catch {
-      this.geocodeCache.set(address, null);
       return null;
     }
   }
@@ -361,6 +397,7 @@ export class JobMapComponent implements OnChanges, AfterViewInit, OnDestroy {
     });
 
     const marker = L.marker(coords, { icon: markerIcon }).addTo(this.map!);
+    this.jobToMarker.set(job.id, marker);
 
     const salary = job.salaryMin
       ? `${job.salaryMin.toLocaleString()} MDL`
@@ -426,5 +463,13 @@ export class JobMapComponent implements OnChanges, AfterViewInit, OnDestroy {
   }
   zoomOut() {
     this.map?.zoomOut();
+  }
+
+  private focusOnJob(jobId: string) {
+    const marker = this.jobToMarker.get(jobId);
+    if (marker && this.map) {
+      this.map.setView(marker.getLatLng(), 15);
+      marker.openPopup();
+    }
   }
 }
