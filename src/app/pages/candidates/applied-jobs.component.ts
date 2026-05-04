@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ApplicationService } from '../../services/application.service';
@@ -174,6 +174,7 @@ export class AppliedJobsComponent implements OnInit {
   private candidateService = inject(CandidateService);
   private authService = inject(AuthService);
   private toastService = inject(ToastService);
+  private cdr = inject(ChangeDetectorRef);
 
   applications: ApplicationDto[] = [];
   isLoading = true;
@@ -217,6 +218,13 @@ export class AppliedJobsComponent implements OnInit {
         const index = this.applications.findIndex(a => a.id === app.id);
         if (index !== -1) {
           this.applications[index] = updated;
+          this.applications = [...this.applications]; // Trigger change detection
+          
+          if (this.selectedApp && this.selectedApp.id === updated.id) {
+            this.selectedApp = updated;
+          }
+          
+          this.cdr.detectChanges();
         }
       },
       error: () => {
