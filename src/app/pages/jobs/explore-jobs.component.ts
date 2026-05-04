@@ -128,9 +128,10 @@ import { Subject, debounceTime, distinctUntilChanged } from "rxjs";
             >
               <div class="flex items-start gap-4 mb-4">
                 <div
-                  class="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-white font-black text-lg flex-shrink-0 shadow-lg shadow-slate-200 group-hover:scale-110 transition-transform duration-300"
+                  class="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-white font-black text-lg flex-shrink-0 shadow-lg shadow-slate-200 group-hover:scale-110 transition-transform duration-300 overflow-hidden"
                 >
-                  {{ job.companyName.charAt(0) }}
+                  <img *ngIf="job.companyLogoUrl" [src]="job.companyLogoUrl" class="w-full h-full object-cover" />
+                  <span *ngIf="!job.companyLogoUrl">{{ job.companyName.charAt(0) }}</span>
                 </div>
                 <div class="min-w-0">
                   <h4
@@ -255,7 +256,7 @@ import { Subject, debounceTime, distinctUntilChanged } from "rxjs";
 
         <!-- Map Area -->
         <main class="flex-1 relative bg-[#F1F5F9]">
-          <app-job-map [jobs]="jobs"></app-job-map>
+          <app-job-map [jobs]="jobs" [selectedJobId]="hoveredJobId || undefined"></app-job-map>
 
           <!-- Overlay Info (Optional) -->
           <div class="absolute top-6 right-6 z-10 pointer-events-none">
