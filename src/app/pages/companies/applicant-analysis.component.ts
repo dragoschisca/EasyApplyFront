@@ -106,7 +106,7 @@ import { environment } from "../../../environments/environment";
             <div
               class="w-20 h-20 bg-indigo-100 text-indigo-700 rounded-2xl flex items-center justify-center font-bold text-3xl mb-6 mx-auto"
             >
-              {{ application.candidateName.charAt(0) || "C" }}
+              {{ (application.candidateName && application.candidateName.length > 0) ? application.candidateName.charAt(0) : "C" }}
             </div>
             <h3 class="text-2xl font-bold text-center text-gray-900 mb-1">
               {{ application.candidateName || "Candidate" }}
