@@ -195,7 +195,7 @@ import { AuthService } from "../../core/services/auth.service";
                 <input
                   type="number"
                   [(ngModel)]="minSalaryFilter"
-                  (change)="applyFilters()"
+                  (ngModelChange)="onSalaryChange()"
                   class="w-full bg-gray-50 border-2 border-transparent rounded-xl px-3 py-3 text-xs focus:bg-white focus:border-indigo-600 transition-all outline-none font-bold"
                   placeholder="Min"
                   min="0"
@@ -203,7 +203,7 @@ import { AuthService } from "../../core/services/auth.service";
                 <input
                   type="number"
                   [(ngModel)]="maxSalaryFilter"
-                  (change)="applyFilters()"
+                  (ngModelChange)="onSalaryChange()"
                   class="w-full bg-gray-50 border-2 border-transparent rounded-xl px-3 py-3 text-xs focus:bg-white focus:border-indigo-600 transition-all outline-none font-bold"
                   placeholder="Max"
                   min="0"
@@ -420,9 +420,10 @@ import { AuthService } from "../../core/services/auth.service";
                   class="flex items-start justify-between mb-4 relative z-10"
                 >
                   <div
-                    class="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center text-white font-black text-xl"
+                    class="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center text-white font-black text-xl overflow-hidden"
                   >
-                    {{ job.companyName.charAt(0) }}
+                    <img *ngIf="job.companyLogoUrl" [src]="job.companyLogoUrl" class="w-full h-full object-cover" />
+                    <span *ngIf="!job.companyLogoUrl">{{ job.companyName.charAt(0) }}</span>
                   </div>
                   <div
                     class="px-3 py-1 bg-white/10 backdrop-blur-md rounded-full border border-white/10 font-black text-[9px] text-indigo-200 uppercase tracking-widest"
@@ -482,9 +483,10 @@ import { AuthService } from "../../core/services/auth.service";
               <div class="flex flex-col sm:flex-row gap-6">
                 <!-- Company Logo -->
                 <div
-                  class="w-16 h-16 bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-2xl flex items-center justify-center text-indigo-600 font-black text-2xl flex-shrink-0 group-hover:rotate-3 transition-transform duration-500 shadow-inner"
+                  class="w-16 h-16 bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-2xl flex items-center justify-center text-indigo-600 font-black text-2xl flex-shrink-0 group-hover:rotate-3 transition-transform duration-500 shadow-inner overflow-hidden"
                 >
-                  {{ job.companyName.charAt(0) }}
+                  <img *ngIf="job.companyLogoUrl" [src]="job.companyLogoUrl" class="w-full h-full object-cover" />
+                  <span *ngIf="!job.companyLogoUrl">{{ job.companyName.charAt(0) }}</span>
                 </div>
 
                 <!-- Content -->
@@ -729,12 +731,15 @@ export class JobListComponent implements OnInit {
   locationTypeFilter: number | undefined = undefined;
   minSalaryFilter: number | null = null;
   maxSalaryFilter: number | null = null;
+  selectedJobId?: string;
 
   page = 1;
   pageSize = 10;
   totalResults = 0;
 
   private searchSubject = new Subject<string>();
+  // ── NEW: dedicated subject so salary keystrokes are debounced ──
+  private salarySubject = new Subject<void>();
 
   ngOnInit() {
     this.searchSubject
@@ -744,8 +749,21 @@ export class JobListComponent implements OnInit {
         this.loadJobs();
       });
 
+    // ── NEW: debounce salary changes so we don't fire on every digit ──
+    this.salarySubject
+      .pipe(debounceTime(500))
+      .subscribe(() => {
+        this.page = 1;
+        this.loadJobs();
+      });
+
     this.loadJobs();
     this.checkCandidateStatus();
+  }
+
+  // ── NEW: called by (ngModelChange) on both salary inputs ──
+  onSalaryChange() {
+    this.salarySubject.next();
   }
 
   checkCandidateStatus() {
@@ -799,6 +817,10 @@ export class JobListComponent implements OnInit {
   applyFilters() {
     this.page = 1;
     this.loadJobs();
+  }
+
+  selectJobOnMap(jobId: string) {
+    this.selectedJobId = jobId;
   }
 
   resetFilters() {
