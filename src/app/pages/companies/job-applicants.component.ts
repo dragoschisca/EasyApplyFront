@@ -209,7 +209,7 @@ import { environment } from "../../../environments/environment";
                 <div
                   class="w-16 h-16 bg-gradient-to-tr from-indigo-500 to-purple-600 text-white rounded-2xl flex items-center justify-center font-black text-2xl shadow-lg group-hover:scale-105 transition-transform duration-300"
                 >
-                  {{ app.candidateName?.charAt(0) || "C" }}
+                  {{ (app.candidateName && app.candidateName.length > 0) ? app.candidateName.charAt(0) : "C" }}
                 </div>
                 <!-- Status dot -->
                 <div
@@ -442,13 +442,16 @@ export class JobApplicantsComponent implements OnInit {
   ngOnInit() {
     this.route.queryParams.subscribe((params) => {
       this.jobId = params["jobId"];
-      if (this.jobId) {
+      console.log('JobApplicantsComponent: jobId =', this.jobId);
+      
+      if (this.jobId && this.jobId.trim() !== '') {
+        this.isLoading = true;
         this.loadJobInfo();
         this.loadApplicants();
       } else {
         this.isLoading = false;
         this.toastService.error(
-          "No job specified. Access this page from a job posting."
+          "No job specified. Please select a job from your postings list."
         );
       }
     });
