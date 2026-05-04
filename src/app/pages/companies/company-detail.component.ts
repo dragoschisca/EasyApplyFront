@@ -6,15 +6,8 @@ import { JobDto } from '../../models/job.model';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 
-export interface CompanyDto {
-  id: string;
-  companyName: string;
-  description?: string;
-  website?: string;
-  logoUrl?: string;
-  industry?: string;
-  location?: string;
-}
+import { CompanyDto } from '../../models/company.model';
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-company-detail',
@@ -32,8 +25,9 @@ export interface CompanyDto {
         <div class="bg-white rounded-[32px] p-8 sm:p-12 shadow-xl shadow-indigo-500/5 border border-gray-100 relative overflow-hidden">
           <div class="relative z-10 flex flex-col md:flex-row items-center md:items-start gap-10">
             <!-- Logo -->
-            <div class="w-32 h-32 bg-indigo-600 rounded-[28px] shadow-2xl shadow-indigo-600/20 flex items-center justify-center text-white text-5xl font-black shrink-0 relative group">
-              {{ company.companyName.charAt(0) }}
+            <div class="w-32 h-32 bg-indigo-600 rounded-[28px] shadow-2xl shadow-indigo-600/20 flex items-center justify-center text-white text-5xl font-black shrink-0 relative group overflow-hidden">
+              <span *ngIf="!company.logoUrl">{{ company.companyName.charAt(0) }}</span>
+              <img *ngIf="company.logoUrl" [src]="company.logoUrl" class="w-full h-full object-cover" />
               <div class="absolute -inset-2 bg-indigo-600/20 rounded-[34px] scale-0 group-hover:scale-100 transition-transform duration-500 -z-10"></div>
             </div>
 
@@ -68,6 +62,9 @@ export interface CompanyDto {
                  <p class="text-3xl font-black text-indigo-700 leading-none mb-1">{{ jobs.length }}</p>
                  <p class="text-[10px] text-indigo-400 font-black uppercase tracking-widest">Open Positions</p>
               </div>
+              <a *ngIf="isOwner" routerLink="/company-profile" class="w-full py-3 bg-gray-900 text-white rounded-xl text-center text-xs font-bold hover:bg-indigo-600 transition-colors shadow-lg">
+                Edit Profile
+              </a>
             </div>
           </div>
           
@@ -133,23 +130,28 @@ export interface CompanyDto {
                 <div class="relative z-10 space-y-8">
                    <h3 class="text-xl font-black text-indigo-200 uppercase tracking-widest text-[10px]">Why join us?</h3>
                    <div class="space-y-8">
-                      <div class="flex items-start">
-                         <div class="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center mr-4 shrink-0 text-indigo-300">
-                           <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-width="2"/></svg>
-                         </div>
-                         <div>
-                            <p class="font-bold text-lg leading-tight mb-1">Fast Growing</p>
-                            <p class="text-xs text-indigo-300/80">Be part of an industry leader.</p>
-                         </div>
+                      <div *ngIf="!company.whyJoinUs" class="space-y-8">
+                        <div class="flex items-start">
+                           <div class="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center mr-4 shrink-0 text-indigo-300">
+                             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-width="2"/></svg>
+                           </div>
+                           <div>
+                              <p class="font-bold text-lg leading-tight mb-1">Fast Growing</p>
+                              <p class="text-xs text-indigo-300/80">Be part of an industry leader.</p>
+                           </div>
+                        </div>
+                        <div class="flex items-start">
+                           <div class="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center mr-4 shrink-0 text-indigo-300">
+                             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" stroke-width="2"/></svg>
+                           </div>
+                           <div>
+                              <p class="font-bold text-lg leading-tight mb-1">Top Talent</p>
+                              <p class="text-xs text-indigo-300/80">Learn from the best in class.</p>
+                           </div>
+                        </div>
                       </div>
-                      <div class="flex items-start">
-                         <div class="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center mr-4 shrink-0 text-indigo-300">
-                           <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" stroke-width="2"/></svg>
-                         </div>
-                         <div>
-                            <p class="font-bold text-lg leading-tight mb-1">Top Talent</p>
-                            <p class="text-xs text-indigo-300/80">Learn from the best in class.</p>
-                         </div>
+                      <div *ngIf="company.whyJoinUs" class="text-indigo-100 text-sm leading-relaxed whitespace-pre-wrap">
+                        {{ company.whyJoinUs }}
                       </div>
                    </div>
                    
@@ -172,11 +174,17 @@ export interface CompanyDto {
 export class CompanyDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private jobService = inject(JobService);
+  private authService = inject(AuthService);
   private http = inject(HttpClient);
   
   company: CompanyDto | null = null;
   jobs: JobDto[] = [];
   isLoading = true;
+
+  get isOwner(): boolean {
+    const user = this.authService.currentUser();
+    return user?.id === this.company?.userId;
+  }
 
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id');
