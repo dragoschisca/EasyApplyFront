@@ -84,7 +84,7 @@ import { CompanyDto, UpdateCompanyDto } from "../../models/company.model";
         </div>
       </div>
 
-      <div class="max-w-6xl mx-auto px-6 relative z-20">
+      <div class="max-w-6xl mx-auto px-6 relative z-20 mt-12">
         <div
           *ngIf="isLoading"
           class="flex flex-col items-center justify-center p-24 bg-white/80 backdrop-blur-3xl rounded-[3rem] border border-white/40 shadow-2xl shadow-purple-100/20 mt-16"
@@ -519,6 +519,18 @@ import { CompanyDto, UpdateCompanyDto } from "../../models/company.model";
                           fit for your team.
                         </p>
                       </div>
+                      <div class="space-y-4">
+                        <label
+                          class="text-[10px] font-black text-gray-400 uppercase tracking-[0.25em] ml-2"
+                          >Why Join Us? (Value Proposition)</label
+                        >
+                        <textarea
+                          formControlName="whyJoinUs"
+                          rows="6"
+                          placeholder="What makes your company a great place to work? Benefits, perks, growth opportunities..."
+                          class="w-full px-10 py-8 bg-gradient-to-br from-gray-50 to-indigo-50/20 border-2 border-transparent rounded-[2.5rem] focus:bg-white focus:border-indigo-600 focus:ring-[12px] focus:ring-indigo-600/5 transition-all font-bold text-gray-900 leading-relaxed"
+                        ></textarea>
+                      </div>
                     </div>
                   </div>
 
@@ -610,6 +622,7 @@ export class CompanyProfileComponent implements OnInit {
     companySize: [""],
     logoUrl: [""],
     companyCulture: [""],
+    whyJoinUs: [""],
   });
 
   companyData: CompanyDto | null = null;
@@ -640,6 +653,7 @@ export class CompanyProfileComponent implements OnInit {
           companySize: data.companySize,
           logoUrl: data.logoUrl,
           companyCulture: data.companyCulture,
+          whyJoinUs: data.whyJoinUs,
         });
         this.isLoading = false;
       },
