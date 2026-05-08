@@ -9,6 +9,7 @@ export interface CompanyDto {
   logoUrl?: string;
   location?: string;
   companyCulture?: string;
+  whyJoinUs?: string;
   email: string;
   subscriptionTier: number;
   subscriptionExpiresAt?: Date;
@@ -25,6 +26,7 @@ export interface CreateCompanyDto {
   logoUrl?: string;
   location?: string;
   companyCulture?: string;
+  whyJoinUs?: string;
 }
 
 export interface UpdateCompanyDto {
@@ -36,4 +38,5 @@ export interface UpdateCompanyDto {
   logoUrl?: string;
   location?: string;
   companyCulture?: string;
+  whyJoinUs?: string;
 }

@@ -1,7 +1,10 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
-import { AuthService } from '../../../core/services/auth.service';
 import { CommonModule } from '@angular/common';
+import { AuthService } from '../../../core/services/auth.service';
+import { NotificationService } from '../../../services/notification.service';
+import { NotificationDto } from '../../../models/notification.model';
+import { interval, startWith, switchMap } from 'rxjs';
 
 @Component({
   selector: 'app-dashboard-layout',
@@ -108,12 +111,41 @@ import { CommonModule } from '@angular/common';
              Welcome back, <span class="text-indigo-600 font-semibold">{{ authService.currentUser()?.firstName || 'User' }}</span>
           </div>
           
-          <div class="flex items-center space-x-4">
-            <button class="p-2 text-gray-400 hover:text-indigo-600 transition-colors">
-              <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
-            </button>
+          <div class="flex items-center space-x-6">
+            <!-- Notification Bell -->
+            <div class="relative">
+              <button (click)="toggleNotifications()" class="p-2 text-gray-400 hover:text-indigo-600 transition-colors relative group">
+                <svg class="w-6 h-6 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+                <span *ngIf="unreadCount > 0" class="absolute top-1 right-1 flex h-4 w-4">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-4 w-4 bg-indigo-600 text-[10px] text-white items-center justify-center font-black">{{ unreadCount }}</span>
+                </span>
+              </button>
+
+              <!-- Dropdown -->
+              <div *ngIf="showNotifications" class="absolute right-0 mt-3 w-80 bg-white rounded-3xl shadow-2xl border border-gray-100 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300">
+                <div class="px-6 py-4 border-b border-gray-50 flex items-center justify-between bg-indigo-50/50">
+                  <h3 class="font-black text-gray-900 text-sm">Notifications</h3>
+                  <button *ngIf="unreadCount > 0" (click)="markAllRead()" class="text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:text-indigo-800 transition-colors">Mark all read</button>
+                </div>
+                <div class="max-h-96 overflow-y-auto custom-scrollbar">
+                  <div *ngIf="notifications.length === 0" class="p-10 text-center text-gray-400">
+                    <p class="text-xs font-bold uppercase tracking-widest">No notifications yet</p>
+                  </div>
+                  <div *ngFor="let note of notifications" 
+                       (click)="markRead(note)"
+                       class="px-6 py-4 border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer relative group">
+                    <div *ngIf="!note.isRead" class="absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-indigo-600 rounded-full"></div>
+                    <p class="text-sm font-bold text-gray-900 mb-1" [class.text-indigo-600]="!note.isRead">{{ note.title }}</p>
+                    <p class="text-xs text-gray-500 leading-relaxed mb-2 line-clamp-2">{{ note.message }}</p>
+                    <p class="text-[9px] font-black text-gray-300 uppercase tracking-widest">{{ note.createdAt | date:'shortTime' }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
             <div class="w-8 h-8 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold cursor-pointer shadow-md shadow-indigo-200">
               {{ (authService.currentUser()?.firstName?.charAt(0) || 'U') | uppercase }}
             </div>
@@ -130,12 +162,59 @@ import { CommonModule } from '@angular/common';
     </div>
   `
 })
-export class DashboardLayoutComponent {
+export class DashboardLayoutComponent implements OnInit {
   authService = inject(AuthService);
+  notificationService = inject(NotificationService);
+
+  notifications: NotificationDto[] = [];
+  unreadCount = 0;
+  showNotifications = false;
+
+  ngOnInit() {
+    this.startPolling();
+  }
+
+  private startPolling() {
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) return;
+
+    interval(30000) // Poll every 30 seconds
+      .pipe(
+        startWith(0),
+        switchMap(() => this.notificationService.getUserNotifications(userId))
+      )
+      .subscribe({
+        next: (notes) => {
+          this.notifications = notes.sort((a: NotificationDto, b: NotificationDto) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          this.unreadCount = this.notifications.filter(n => !n.isRead).length;
+        }
+      });
+  }
+
+  toggleNotifications() {
+    this.showNotifications = !this.showNotifications;
+  }
+
+  markRead(note: NotificationDto) {
+    if (note.isRead) return;
+    this.notificationService.markAsRead(note.id).subscribe(() => {
+      note.isRead = true;
+      this.unreadCount--;
+    });
+  }
+
+  markAllRead() {
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) return;
+
+    this.notificationService.markAllAsRead(userId).subscribe(() => {
+      this.notifications.forEach(n => n.isRead = true);
+      this.unreadCount = 0;
+    });
+  }
 
   logout() {
     this.authService.logout();
-    // Usually inject router and navigate to '/login'
     window.location.href = '/login';
   }
 }
