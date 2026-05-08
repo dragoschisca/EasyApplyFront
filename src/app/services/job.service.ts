@@ -54,6 +54,18 @@ export class JobService {
     return this.http.get<SearchJobResponse>(`${this.apiUrl}/search`, { params });
   }
 
+  /**
+   * Returns jobs within `radiusKm` kilometres of the given coordinate.
+   * Uses the backend Haversine query — only jobs with stored coordinates are returned.
+   */
+  getNearby(lat: number, lng: number, radiusKm: number): Observable<JobDto[]> {
+    const params = new HttpParams()
+      .set('lat', lat.toString())
+      .set('lng', lng.toString())
+      .set('radiusKm', radiusKm.toString());
+    return this.http.get<JobDto[]>(`${this.apiUrl}/nearby`, { params });
+  }
+
   create(dto: CreateJobDto): Observable<JobDto> {
     return this.http.post<JobDto>(this.apiUrl, dto);
   }
@@ -74,3 +86,4 @@ export class JobService {
     return this.http.get<JobDto[]>(`${this.apiUrl}/recommendations/${userId}?count=${count}`);
   }
 }
+
