@@ -36,5 +36,6 @@ export interface UserAuthDto {
   firstName: string;
   lastName: string;
   role: string;
+  companyId?: string;
   createdAt: string;
 }

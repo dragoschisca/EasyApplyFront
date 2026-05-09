@@ -1,16 +1,17 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AnalyticsService } from '../../core/services/analytics.service';
+import { AnalyticsService } from '../../services/analytics.service';
 import { AuthService } from '../../core/services/auth.service';
 import { CompanyStatistics } from '../../models/company.model';
-import { BaseChartDirective, provideCharts, withDefaultRegisterables } from 'ng2-charts';
-import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
+import { NgChartsModule } from 'ng2-charts';
+import { ChartConfiguration, ChartData, ChartType, Chart, registerables } from 'chart.js';
+
+Chart.register(...registerables);
 
 @Component({
   selector: 'app-company-analytics-dashboard',
   standalone: true,
-  imports: [CommonModule, BaseChartDirective],
-  providers: [provideCharts(withDefaultRegisterables())],
+  imports: [CommonModule, NgChartsModule],
   templateUrl: './company-analytics-dashboard.component.html',
   styleUrl: './company-analytics-dashboard.component.css'
 })
@@ -69,12 +70,12 @@ export class CompanyAnalyticsDashboardComponent implements OnInit {
 
     this.isLoading.set(true);
     this.analyticsService.getCompanyAnalytics(user.companyId).subscribe({
-      next: (data) => {
+      next: (data: CompanyStatistics) => {
         this.stats.set(data);
         this.prepareCharts(data);
         this.isLoading.set(false);
       },
-      error: (err) => {
+      error: (err: any) => {
         this.error.set('Failed to load analytics data.');
         this.isLoading.set(false);
       }
