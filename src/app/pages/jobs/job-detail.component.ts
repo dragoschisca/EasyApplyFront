@@ -430,7 +430,9 @@ import { CandidateService } from "../../services/candidate.service";
                       >
                         Salary Range
                       </p>
-                      <p class="text-2xl font-black text-slate-900">
+                      <p
+                        class="text-2xl font-black text-slate-900 flex flex-wrap items-center gap-3"
+                      >
                         {{
                           job.salaryMin
                             ? (job.salaryMin | number : "1.0-0") +
@@ -439,6 +441,36 @@ import { CandidateService } from "../../services/candidate.service";
                               " MDL"
                             : "Negotiable"
                         }}
+
+                        <!-- AI Benchmark Badge -->
+                        <span
+                          *ngIf="benchmark"
+                          class="inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border transition-all"
+                          [ngClass]="{
+                            'bg-emerald-50 text-emerald-600 border-emerald-100':
+                              benchmark.statusLabel === 'Highly Competitive' ||
+                              benchmark.statusLabel === 'Competitive',
+                            'bg-indigo-50 text-indigo-600 border-indigo-100':
+                              benchmark.statusLabel === 'Fair Market Value',
+                            'bg-amber-50 text-amber-600 border-amber-100':
+                              benchmark.statusLabel === 'Slightly Below Market',
+                            'bg-red-50 text-red-600 border-red-100':
+                              benchmark.statusLabel === 'Below Average'
+                          }"
+                        >
+                          <svg
+                            class="w-3 h-3 mr-1"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path
+                              fill-rule="evenodd"
+                              d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2l5.25.916a1 1 0 01.516 1.626l-3.398 3.38.801 5.242a1 1 0 01-1.414 1.107L11 16.97l-4.901 2.5a1 1 0 01-1.414-1.107l.801-5.242-3.398-3.38a1 1 0 01.516-1.626l5.25-.916 1.212-4.456A1 1 0 0112 2z"
+                              clip-rule="evenodd"
+                            />
+                          </svg>
+                          {{ benchmark.statusLabel }}
+                        </span>
                       </p>
                     </div>
 
@@ -578,6 +610,7 @@ export class JobDetailComponent implements OnInit {
   candidateId: string | null = null;
 
   isApplyModalOpen = false;
+  benchmark: any | null = null;
 
   isCandidate = false;
   candidateProfile: any = null;
@@ -599,6 +632,7 @@ export class JobDetailComponent implements OnInit {
         this.isLoading = false;
         this.jobService.incrementViewCount(id).subscribe();
         this.checkIfSaved();
+        this.loadBenchmark();
       },
       error: () => {
         this.isLoading = false;
@@ -750,10 +784,28 @@ export class JobDetailComponent implements OnInit {
 
   onShare() {
     const url = window.location.href;
-    navigator.clipboard.writeText(url).then(() => {
-      this.toastService.success("Job link copied to clipboard!");
-    }).catch(() => {
-      this.toastService.error("Failed to copy link.");
-    });
+    navigator.clipboard
+      .writeText(url)
+      .then(() => {
+        this.toastService.success("Job link copied to clipboard!");
+      })
+      .catch(() => {
+        this.toastService.error("Failed to copy link.");
+      });
+  }
+
+  loadBenchmark() {
+    if (!this.job) return;
+    this.jobService
+      .getSalaryBenchmark(
+        this.job.category,
+        this.job.experienceLevel,
+        this.job.salaryMin,
+        this.job.salaryMax
+      )
+      .subscribe({
+        next: (res) => (this.benchmark = res),
+        error: () => console.warn("Could not load salary benchmark"),
+      });
   }
 }
