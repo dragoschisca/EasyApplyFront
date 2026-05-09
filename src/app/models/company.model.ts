@@ -40,3 +40,22 @@ export interface UpdateCompanyDto {
   companyCulture?: string;
   whyJoinUs?: string;
 }
+
+export interface CompanyStatistics {
+  totalApplicants: number;
+  weeklyProfileViews: DailyView[];
+  topJobs: JobPopularity[];
+}
+
+export interface DailyView {
+  date: Date;
+  views: number;
+}
+
+export interface JobPopularity {
+  jobId: string;
+  title: string;
+  viewsCount: number;
+  applicationsCount: number;
+  conversionRate: number;
+}
