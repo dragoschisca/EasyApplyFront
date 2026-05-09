@@ -61,6 +61,11 @@ export const appRoutes: Routes = [
         loadComponent: () => import('./pages/companies/job-applicants.component').then(m => m.JobApplicantsComponent) 
       },
       { 
+        path: 'company-analytics', 
+        canActivate: [companyGuard],
+        loadComponent: () => import('./pages/companies/company-analytics-dashboard.component').then(m => m.CompanyAnalyticsDashboardComponent) 
+      },
+      { 
         path: 'discover-talent', 
         canActivate: [companyGuard],
         loadComponent: () => import('./pages/companies/discover-talent.component').then(m => m.DiscoverTalentComponent) 
